@@ -1,6 +1,6 @@
 import streamlit as st
 import numpy as np
-from transformers import pipeline
+from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 
 # Load a pre-trained NLP model for text classification
 nlp_model = pipeline("text-classification")
