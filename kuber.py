@@ -3,19 +3,21 @@ import numpy as np
 from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 
 # Load a pre-trained NLP model for text classification
-nlp_model = pipeline("text-classification")
+model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
+tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
+nlp_model = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
 
 # Define a function to process user input and generate a budget draft
 def generate_budget_draft(user_input):
     # Tokenize the user input
-    tokens = nlp_model.tokenizer.encode(user_input, return_tensors="pt")
+    tokens = tokenizer.encode(user_input, return_tensors="pt")
 
     # Extract relevant information using NLP techniques
-    entities = nlp_model(tokens)
+    entities = nlp_model(user_input)
     categories = []
     for entity in entities:
-        if entity["entity"] == "CATEGORY":
-            categories.append(entity["word"])
+        if entity["label"] == "POSITIVE":
+            categories.append(entity["score"])
 
     # Suggest allocation percentages using machine learning
     allocations = []
@@ -27,7 +29,7 @@ def generate_budget_draft(user_input):
     # Generate a draft budget
     budget_draft = {}
     for i, category in enumerate(categories):
-        budget_draft[category] = allocations[i]
+        budget_draft[f"Category {i+1}"] = allocations[i]
 
     return budget_draft
 
