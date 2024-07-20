@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
+import torch
 
 # Load a pre-trained NLP model for text classification
 model_name = "distilbert-base-uncased-finetuned-sst-2-english"
