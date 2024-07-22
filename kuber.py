@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+import joblib
 
 # Create a title and description for the UI
 st.title("Budget Drafting Assistant")
@@ -25,11 +26,10 @@ if uploaded_file is not None:
         input_data = pd.DataFrame({'Revenue': [revenue], 'Expenses': [expenses], 'Industry': [industry]})
 
         # Load the trained machine learning model
-        model = RandomForestRegressor()
-        model.load('budget_model.pkl')
+        model = joblib.load('budget_model.pkl')
 
         # Make a prediction on the input data
-        prediction = model.predict(input_data)
+        prediction = model.predict(input_data[['Revenue', 'Expenses']])
 
         # Display the predicted budget
         st.subheader(f"Predicted Budget: ${prediction[0]:.2f}")
