@@ -17,6 +17,14 @@ marketing_expenses = st.number_input("Enter the marketing expenses:")
 # Define the budget allocation parameters
 budget_params = ['Employee Salaries', 'Office Rent', 'Marketing', 'Research and Development', 'Miscellaneous']
 
+# Define the weights for each parameter based on industry and other factors
+weights = {
+    'Tech': [0.4, 0.2, 0.1, 0.2, 0.1],
+    'Finance': [0.3, 0.3, 0.1, 0.2, 0.1],
+    'Healthcare': [0.5, 0.2, 0.1, 0.1, 0.1],
+    'Other': [0.4, 0.2, 0.1, 0.2, 0.1]
+}[industry]
+
 # Create a button to submit the input data
 if st.button("Submit"):
     # Define the objective function to minimize
@@ -25,14 +33,10 @@ if st.button("Submit"):
         total_budget = revenue - expenses
         
         # Calculate the allocation for each parameter
-        employee_salaries = allocation[0] * total_budget
-        office_rent = allocation[1] * total_budget
-        marketing = allocation[2] * total_budget
-        research_and_development = allocation[3] * total_budget
-        miscellaneous = allocation[4] * total_budget
+        allocations = [allocation[i] * total_budget * weights[i] for i in range(len(budget_params))]
         
         # Calculate the penalty for exceeding the total budget
-        penalty = max(0, employee_salaries + office_rent + marketing + research_and_development + miscellaneous - total_budget)
+        penalty = max(0, sum(allocations) - total_budget)
         
         # Return the penalty as the objective function value
         return penalty
@@ -49,6 +53,6 @@ if st.button("Submit"):
     # Display the optimized budget allocation
     st.subheader("Optimized Budget Allocation:")
     for i, param in enumerate(budget_params):
-        st.write(f"{param}: {result.x[i] * (revenue - expenses):.2f}")
+        st.write(f"{param}: {result.x[i] * (revenue - expenses) * weights[i]:.2f}")
 else:
     st.write("Please enter the required data and click Submit.")
