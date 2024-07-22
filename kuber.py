@@ -1,24 +1,30 @@
+import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
 
 # Load historical budget data
 data = pd.read_csv('budget_data.csv')
 
-# Preprocess data
-X = data.drop(['Budget'], axis=1)  # features
-y = data['Budget']  # target variable
+# Create a title and description for the UI
+st.title("Budget Drafting Assistant")
+st.write("This model helps companies draft budgets with minimal human intervention. Please input the required information below.")
 
-# Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Input fields for revenue, expenses, and industry
+revenue = st.number_input("Enter the company's revenue:")
+expenses = st.number_input("Enter the company's expenses:")
+industry = st.selectbox("Select the company's industry:", ["Tech", "Finance", "Healthcare", "Other"])
 
-# Train a random forest regressor model
-model = RandomForestRegressor(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
+# Create a button to submit the input data
+if st.button("Submit"):
+    # Create a dataframe with the input data
+    input_data = pd.DataFrame({'Revenue': [revenue], 'Expenses': [expenses], 'Industry': [industry]})
 
-# Make predictions on new data
-new_data = pd.DataFrame({'Revenue': [1000000], 'Expenses': [500000], 'Industry': ['Tech']})
-prediction = model.predict(new_data)
+    # Load the trained machine learning model
+    model = RandomForestRegressor()
+    model.load('budget_model.pkl')
 
-# Print the predicted budget
-print('Predicted Budget:', prediction[0])
+    # Make a prediction on the input data
+    prediction = model.predict(input_data)
+
+    # Display the predicted budget
+    st.subheader(f"Predicted Budget: ${prediction[0]:.2f}")
