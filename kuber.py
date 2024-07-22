@@ -1,101 +1,85 @@
 import streamlit as st
 import pandas as pd
-from scipy.optimize import minimize
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.linear_model import LinearRegression
+import numpy as np
+import base64
 
-# Create a title and description for the UI
-st.title("Comprehensive Budget Optimization Program")
-st.write("This program helps companies optimize their budget allocation based on various parameters. Please enter the required data.")
+# Load dataset
+data = {
+    'Campaign': ['Facebook', 'Google', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Snapchat', 'Reddit', 'Quora'],
+    'Budget': [1000, 2000, 1500, 1200, 1800, 2500, 800, 1000, 500, 300],
+    'Impressions': [10000, 20000, 15000, 12000, 18000, 25000, 8000, 10000, 5000, 3000],
+    'Clicks': [500, 1000, 750, 600, 900, 1200, 400, 500, 250, 150],
+    'Conversions': [20, 40, 30, 25, 35, 50, 20, 25, 15, 10],
+    'ROI': [0.2, 0.4, 0.3, 0.25, 0.35, 0.5, 0.2, 0.25, 0.15, 0.1]
+}
+df = pd.DataFrame(data)
 
-# Create input fields for revenue, expenses, and industry
-revenue = st.number_input("Enter the company's revenue:")
-expenses = st.number_input("Enter the company's expenses:")
-industry = st.selectbox("Select the company's industry:", ["Tech", "Finance", "Healthcare", "Other"])
-employee_count = st.number_input("Enter the number of employees:")
-office_space = st.selectbox("Does the company have office space?", ["Yes", "No"])
-marketing_expenses = st.number_input("Enter the marketing expenses:")
-research_and_development_expenses = st.number_input("Enter the research and development expenses:")
-operating_expenses_base = st.number_input("Enter the operating expenses (excluding taxes and interest):")
-interest_expenses = st.number_input("Enter the interest expenses:")
-taxes = st.number_input("Enter the taxes:")
+# Add more ROI's
+df['ROI_2'] = df['ROI'] * 1.1
+df['ROI_3'] = df['ROI'] * 1.2
+df['ROI_4'] = df['ROI'] * 1.3
+df['ROI_5'] = df['ROI'] * 1.4
 
-office_rent = 0
-if office_space == "Yes":
-    office_rent = st.number_input("Enter the office rent:")
+# Create a feature matrix and target vector
+X = df[['Budget', 'Impressions', 'Clicks', 'Conversions']]
+y = df['ROI']
 
-# Calculate the total operating expenses
-operating_expenses = operating_expenses_base + interest_expenses + taxes
+# Scale the data using StandardScaler
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
 
-# Define the budget allocation parameters
-budget_params = ['Employee Salaries', 'Office Rent', 'Marketing', 'Research and Development', 'Operating Expenses', 'Miscellaneous']
+# Apply PCA to reduce dimensionality
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X_scaled)
 
-# Define the weights for each parameter based on industry and other factors
-weights = {
-    'Tech': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
-    'Finance': [0.2, 0.3, 0.1, 0.1, 0.1, 0.2],
-    'Healthcare': [0.4, 0.2, 0.1, 0.1, 0.1, 0.1],
-    'Other': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2]
-}[industry]
+# Perform K-Means clustering
+kmeans = KMeans(n_clusters=3)
+kmeans.fit(X_pca)
+labels = kmeans.labels_
 
-# Create a button to submit the input data
-if st.button("Submit"):
-    # Calculate the total budget available for optimization
-    total_budget = revenue - expenses - office_rent
-    
-    # Define the objective function to minimize
-    def objective_function(allocation):
-        # Calculate the allocation for each parameter
-        allocations = [allocation[i] * total_budget * weights[i] for i in range(len(budget_params))]
-        
-        # Calculate the penalty for exceeding the total budget
-        penalty = max(0, sum(allocations) - total_budget)
-        
-        # Return the penalty as the objective function value
-        return penalty
-    
-    # Define the bounds for the allocation parameters
-    bounds = [(0, 1) for _ in range(len(budget_params))]
-    
-    # Initialize the allocation parameters
-    init_allocation = [0.2 for _ in range(len(budget_params))]
-    
-    # Run the optimization
-    result = minimize(objective_function, init_allocation, method="SLSQP", bounds=bounds)
-    
-    # Display the optimized budget allocation
-    st.subheader("Optimized Budget Allocation:")
-    for i, param in enumerate(budget_params):
-        if param == 'Office Rent' and office_space == "No":
-            st.write(f"{param}: 0.00")
-        else:
-            st.write(f"{param}: {result.x[i] * total_budget * weights[i]:.2f}")
-    
-    # Calculate and display the ROI (Return on Investment) for each parameter
-    st.subheader("ROI Analysis:")
-    roi_params = ['Marketing', 'Research and Development']
-    roi_weights = [0.5, 0.5]
-    roi_results = []
-    for i, param in enumerate(roi_params):
-        roi = (result.x[budget_params.index(param)] * total_budget * weights[budget_params.index(param)]) / (marketing_expenses if param == 'Marketing' else research_and_development_expenses)
-        roi_results.append(roi)
-        st.write(f"{param} ROI: {roi:.2f}")
-    
-    # Calculate and display the budget utilization ratio
-    st.subheader("Budget Utilization Ratio:")
-    budget_utilization_ratio = sum([result.x[i] * total_budget * weights[i] for i in range(len(budget_params))]) / total_budget
-    st.write(f"Budget Utilization Ratio: {budget_utilization_ratio:.2f}")
-    
-    # Create a button to download the optimized budget allocation as a CSV file
-    @st.cache
-    def create_csv(result):
-        data = {'Parameter': budget_params, 'Allocation':[result.x[i] * total_budget * weights[i] for i in range(len(budget_params))]}
-        df = pd.DataFrame(data)
-        return df
+# Select the top 2 features using SelectKBest
+selector = SelectKBest(f_classif, k=2)
+X_selected = selector.fit_transform(X_scaled, y)
 
-    if st.button("Download Optimized Budget Allocation"):
-        csv = create_csv(result)
-        csv_string = csv.to_csv(index=False)
-        b64 = base64.b64encode(csv_string.encode()).decode()
-        href = f'<a href="data:file/csv;base64,{b64}" download="optimized_budget_allocation.csv">Download CSV</a>'
-        st.write(href, unsafe_allow_html=True)
-else:
-    st.write("Please enter the required data and click Submit.")
+# Create a linear regression model
+lr_model = LinearRegression()
+lr_model.fit(X_selected, y)
+
+# Create a function to generate recommendations
+def generate_recommendations(budget, impressions, clicks, conversions):
+    X_new = pd.DataFrame({'Budget': [budget], 'Impressions': [impressions], 'Clicks': [clicks], 'Conversions': [conversions]})
+    X_new_scaled = scaler.transform(X_new)
+    X_new_pca = pca.transform(X_new_scaled)
+    label = kmeans.predict(X_new_pca)[0]
+    X_new_selected = selector.transform(X_new_scaled)
+    roi_pred = lr_model.predict(X_new_selected)[0]
+    return label, roi_pred
+
+# Create a Streamlit app
+st.title("ROI Optimization Tool")
+st.write("Enter campaign details to get recommendations:")
+
+budget = st.number_input("Budget", value=1000)
+impressions = st.number_input("Impressions", value=10000)
+clicks = st.number_input("Clicks", value=500)
+conversions = st.number_input("Conversions", value=20)
+
+if st.button("Get Recommendations"):
+    label, roi_pred = generate_recommendations(budget, impressions, clicks, conversions)
+    st.write(f"Recommended cluster: {label}")
+    st.write(f"Predicted ROI: {roi_pred:.2f}")
+    st.write("Top 3 campaigns to increase ROI:")
+    top_campaigns = df.sort_values(by='ROI', ascending=False).head(3)
+    st.write(top_campaigns)
+
+    # Create a CSV file with recommendations
+    csv = pd.DataFrame({'Campaign': top_campaigns['Campaign'], 'Budget': top_campaigns['Budget'], 'Impressions': top_campaigns['Impressions'], 'Clicks': top_campaigns['Clicks'], 'Conversions': top_campaigns['Conversions'], 'ROI': top_campaigns['ROI']})
+    csv_string = csv.to_csv(index=False)
+    b64 = base64.b64encode(csv_string.encode()).decode()
+    href = f'<a href="data:file/csv;base64,{b64}" download="recommended_campaigns.csv">Download CSV</a>'
+    st.write(href, unsafe_allow_html=True)
