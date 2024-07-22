@@ -60,11 +60,19 @@ budget_params = ['Employee Salaries', 'Office Rent', 'Marketing', 'Research and 
 
 # Define the weights for each parameter based on industry and other factors
 weights = {
-    'Tech': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
+    'Retail': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
     'Finance': [0.2, 0.3, 0.1, 0.1, 0.1, 0.2],
     'Healthcare': [0.4, 0.2, 0.1, 0.1, 0.1, 0.1],
-    'Other': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2]
-}[industry_type]
+    'Technology': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
+    'Events': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
+    'Real Estate': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
+    'Manufacturing': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
+    'Energy': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
+    'Media': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2]
+}
+
+# Calculate the weights based on the selected industry type
+weights_allocation = weights[industry_type]
 
 # Calculate campaign effectiveness
 campaign_effectiveness = campaign_effectiveness_data[industry_type][sub_industry_type]
