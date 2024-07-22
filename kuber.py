@@ -93,10 +93,9 @@ if st.button("Submit"):
 
     if st.button("Download Optimized Budget Allocation"):
         csv = create_csv(result)
-        buffer = io.StringIO()
-        csv.to_csv(buffer, index=False)
-        st.markdown("#### Download CSV File")
-        href = f'<a href="data:file/csv;base64,{buffer.getvalue().encode().decode()}" download="optimized_budget_allocation.csv">Download CSV</a>'
-        st.markdown(href, unsafe_allow_html=True)
+        csv_string = csv.to_csv(index=False)
+        b64 = base64.b64encode(csv_string.encode()).decode()
+        href = f'<a href="data:file/csv;base64,{b64}" download="optimized_budget_allocation.csv">Download CSV</a>'
+        st.write(href, unsafe_allow_html=True)
 else:
     st.write("Please enter the required data and click Submit.")
