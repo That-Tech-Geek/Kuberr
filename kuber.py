@@ -1,77 +1,126 @@
 import streamlit as st
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.cluster import KMeans
-from sklearn.feature_selection import SelectKBest, f_classif
-from sklearn.linear_model import LinearRegression
-import numpy as np
+from scipy.optimize import minimize
+import requests
 
-# Load dataset
-data = {
-    'Campaign': ['Facebook', 'Google', 'Instagram', 'Twitter', 'LinkedIn', 'YouTube', 'TikTok', 'Snapchat', 'Reddit', 'Quora'],
-    'Budget': [1000, 2000, 1500, 1200, 1800, 2500, 800, 1000, 500, 300],
-    'Impressions': [10000, 20000, 15000, 12000, 18000, 25000, 8000, 10000, 5000, 3000],
-    'Clicks': [500, 1000, 750, 600, 900, 1200, 400, 500, 250, 150],
-    'Conversions': [20, 40, 30, 25, 35, 50, 20, 25, 15, 10],
-    'ROI': [0.2, 0.4, 0.3, 0.25, 0.35, 0.5, 0.2, 0.25, 0.15, 0.1]
-}
-df = pd.DataFrame(data)
+# Create a title and description for the UI
+st.title("Comprehensive Budget Optimization Program")
+st.write("This program helps companies optimize their budget allocation based on various parameters. Please enter the required data.")
 
-# Add more ROI's
-df['ROI_2'] = df['ROI'] * 1.1
-df['ROI_3'] = df['ROI'] * 1.2
-df['ROI_4'] = df['ROI'] * 1.3
-df['ROI_5'] = df['ROI'] * 1.4
+# Create input fields for revenue, expenses, and industry
+revenue = st.number_input("Enter the company's revenue:")
+expenses = st.number_input("Enter the company's expenses:")
+industry = st.selectbox("Select the company's industry:", ["Tech", "Finance", "Healthcare", "Other"])
+employee_count = st.number_input("Enter the number of employees:")
+office_space = st.selectbox("Does the company have office space?", ["Yes", "No"])
+marketing_expenses = st.number_input("Enter the marketing expenses:")
+research_and_development_expenses = st.number_input("Enter the research and development expenses:")
+operating_expenses_base = st.number_input("Enter the operating expenses (excluding taxes and interest):")
+interest_expenses = st.number_input("Enter the interest expenses:")
+taxes = st.number_input("Enter the taxes:")
 
-# Create a feature matrix and target vector
-X = df[['Budget', 'Impressions', 'Clicks', 'Conversions']]
-y = df['ROI']
+office_rent = 0
+if office_space == "Yes":
+    office_rent = st.number_input("Enter the office rent:")
 
-# Scale the data using StandardScaler
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+# Calculate the total operating expenses
+operating_expenses = operating_expenses_base + interest_expenses + taxes
 
-# Apply PCA to reduce dimensionality
-pca = PCA(n_components=2)
-X_pca = pca.fit_transform(X_scaled)
+# Define the budget allocation parameters
+budget_params = ['Employee Salaries', 'Office Rent', 'Marketing', 'Research and Development', 'Operating Expenses', 'Miscellaneous']
 
-# Perform K-Means clustering
-kmeans = KMeans(n_clusters=3)
-kmeans.fit(X_pca)
-labels = kmeans.labels_
+# Define the weights for each parameter based on industry and other factors
+weights = {
+    'Tech': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
+    'Finance': [0.2, 0.3, 0.1, 0.1, 0.1, 0.2],
+    'Healthcare': [0.4, 0.2, 0.1, 0.1, 0.1, 0.1],
+    'Other': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2]
+}[industry]
 
-# Select the top 2 features using SelectKBest
-selector = SelectKBest(f_classif, k=2)
-X_selected = selector.fit_transform(X_scaled, y)
+# Create a function to research campaign effectiveness in real-time using Google Trends API
+def research_campaign_effectiveness():
+    api_key = "YOUR_API_KEY"
+    url = f"https://api.serper.io/search?engine=google_trends&api_key={api_key}&q=marketing+campaigns+effectiveness"
+    response = requests.get(url)
+    data = response.json()
+    # Extract relevant data from the API response
+    campaign_effectiveness_data = []
+    for result in data["organic_results"]:
+        campaign_effectiveness_data.append({
+            "Campaign": result["title"],
+            "Search Volume": result["search_volume"],
+            "Trends": result["trends"]
+        })
+    return campaign_effectiveness_data
 
-# Create a linear regression model
-lr_model = LinearRegression()
-lr_model.fit(X_selected, y)
+# Create a button to research campaign effectiveness
+if st.button("Research Campaign Effectiveness"):
+    campaign_effectiveness_data = research_campaign_effectiveness()
+    st.write("Campaign Effectiveness Data:")
+    st.write(pd.DataFrame(campaign_effectiveness_data))
 
-# Create a function to generate recommendations
-def generate_recommendations(budget, impressions, clicks, conversions):
-    X_new = pd.DataFrame({'Budget': [budget], 'Impressions': [impressions], 'Clicks': [clicks], 'Conversions': [conversions]})
-    X_new_scaled = scaler.transform(X_new)
-    X_new_pca = pca.transform(X_new_scaled)
-    label = kmeans.predict(X_new_pca)[0]
-    X_new_selected = selector.transform(X_new_scaled)
-    roi_pred = lr_model.predict(X_new_selected)[0]
-    return label, roi_pred
+# Create a button to submit the input data
+if st.button("Submit"):
+    # Calculate the total budget available for optimization
+    total_budget = revenue - expenses - office_rent
+    
+    # Define the objective function to minimize
+    def objective_function(allocation):
+        # Calculate the allocation for each parameter
+        allocations = [allocation[i] * total_budget * weights[i] for i in range(len(budget_params))]
+        
+        # Calculate the penalty for exceeding the total budget
+        penalty = max(0, sum(allocations) - total_budget)
+        
+        # Return the penalty as the objective function value
+        return penalty
+    
+    # Define the bounds for the allocation parameters
+    bounds = [(0, 1) for _ in range(len(budget_params))]
+    
+    # Initialize the allocation parameters
+    init_allocation = [0.2 for _ in range(len(budget_params))]
+    
+    # Run the optimization
+    result = minimize(objective_function, init_allocation, method="SLSQP", bounds=bounds)
+    
+    # Display the optimized budget allocation
+    st.subheader("Optimized Budget Allocation:")
+    for i, param in enumerate(budget_params):
+        if param == 'Office Rent' and office_space == "No":
+            st.write(f"{param}: 0.00")
+        else:
+            st.write(f"{param}: {result.x[i] * total_budget * weights[i]:.2f}")
+    
+    # Calculate and display the ROI (Return on Investment) for each parameter
+st.subheader("ROI Analysis:")
+roi_params = ['Marketing', 'Research and Development']
+for param in roi_params:
+    roi = 0
+    if param == 'Marketing':
+        roi = campaign_effectiveness_data[0]["Search Volume"] * 0.01
+    elif param == 'Research and Development':
+        roi = campaign_effectiveness_data[1]["Trends"] * 0.05
+    st.write(f"{param} ROI: {roi:.2f}")
 
-# Create a Streamlit app
-st.title("ROI Optimization Tool")
-st.write("Enter campaign details to get recommendations:")
+# Calculate the total ROI
+total_roi = sum([roi for roi in [campaign_effectiveness_data[0]["Search Volume"] * 0.01, campaign_effectiveness_data[1]["Trends"] * 0.05]])
+st.write(f"Total ROI: {total_roi:.2f}")
 
-budget = st.number_input("Budget", value=1000)
-impressions = st.number_input("Impressions", value=10000)
-clicks = st.number_input("Clicks", value=500)
-conversions = st.number_input("Conversions", value=20)
+# Calculate the ROI for each budget parameter
+roi_allocations = []
+for i, param in enumerate(budget_params):
+    if param == 'Office Rent' and office_space == "No":
+        roi_allocations.append(0)
+    else:
+        roi_allocation = result.x[i] * total_budget * weights[i] * total_roi
+        roi_allocations.append(roi_allocation)
+        st.write(f"{param} ROI Allocation: {roi_allocation:.2f}")
 
-if st.button("Get Recommendations"):
-    label, roi_pred = generate_recommendations(budget, impressions, clicks, conversions)
-    st.write(f"Recommended cluster: {label}")
-    st.write(f"Predicted ROI: {roi_pred:.2f}")
-    st.write("Top 3 campaigns to increase ROI:")
-    top_campaigns = df.sort_values(by='ROI', ascending=False).head(3)
-    st.write(top_campaigns)
+# Display the optimized budget allocation with ROI
+st.subheader("Optimized Budget Allocation with ROI:")
+for i, param in enumerate(budget_params):
+    if param == 'Office Rent' and office_space == "No":
+        st.write(f"{param}: 0.00")
+    else:
+        st.write(f"{param}: {result.x[i] * total_budget * weights[i]:.2f} ({roi_allocations[i]:.2f} ROI)")
