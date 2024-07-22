@@ -6,7 +6,6 @@ from sklearn.cluster import KMeans
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.linear_model import LinearRegression
 import numpy as np
-import base64
 
 # Load dataset
 data = {
@@ -76,10 +75,3 @@ if st.button("Get Recommendations"):
     st.write("Top 3 campaigns to increase ROI:")
     top_campaigns = df.sort_values(by='ROI', ascending=False).head(3)
     st.write(top_campaigns)
-
-    # Create a CSV file with recommendations
-    csv = pd.DataFrame({'Campaign': top_campaigns['Campaign'], 'Budget': top_campaigns['Budget'], 'Impressions': top_campaigns['Impressions'], 'Clicks': top_campaigns['Clicks'], 'Conversions': top_campaigns['Conversions'], 'ROI': top_campaigns['ROI']})
-    csv_string = csv.to_csv(index=False)
-    b64 = base64.b64encode(csv_string.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="recommended_campaigns.csv">Download CSV</a>'
-    st.write(href, unsafe_allow_html=True)
