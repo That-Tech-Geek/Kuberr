@@ -95,16 +95,13 @@ if st.button("Submit"):
     # Calculate and display the ROI (Return on Investment) for each parameter
 st.subheader("ROI Analysis:")
 roi_params = ['Marketing', 'Research and Development']
-for param in roi_params:
-    roi = 0
-    if param == 'Marketing':
-        roi = campaign_effectiveness_data[0]["Search Volume"] * 0.01
-    elif param == 'Research and Development':
-        roi = campaign_effectiveness_data[1]["Trends"] * 0.05
+roi_values = [0.01, 0.05]
+for i, param in enumerate(roi_params):
+    roi = campaign_effectiveness_data[i][list(campaign_effectiveness_data[i].keys())[0]] * roi_values[i]
     st.write(f"{param} ROI: {roi:.2f}")
 
 # Calculate the total ROI
-total_roi = sum([roi for roi in [campaign_effectiveness_data[0]["Search Volume"] * 0.01, campaign_effectiveness_data[1]["Trends"] * 0.05]])
+total_roi = sum([campaign_effectiveness_data[i][list(campaign_effectiveness_data[i].keys())[0]] * roi_values[i] for i in range(len(roi_params))])
 st.write(f"Total ROI: {total_roi:.2f}")
 
 # Calculate the ROI for each budget parameter
