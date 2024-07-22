@@ -68,5 +68,31 @@ if st.button("Submit"):
             st.write(f"{param}: 0.00")
         else:
             st.write(f"{param}: {result.x[i] * total_budget * weights[i]:.2f}")
+    
+    # Calculate and display the ROI (Return on Investment) for each parameter
+    st.subheader("ROI Analysis:")
+    roi_params = ['Marketing', 'Research and Development']
+    roi_weights = [0.5, 0.5]
+    roi_results = []
+    for i, param in enumerate(roi_params):
+        roi = (result.x[budget_params.index(param)] * total_budget * weights[budget_params.index(param)]) / (marketing_expenses if param == 'Marketing' else research_and_development_expenses)
+        roi_results.append(roi)
+        st.write(f"{param} ROI: {roi:.2f}")
+    
+    # Calculate and display the budget utilization ratio
+    st.subheader("Budget Utilization Ratio:")
+    budget_utilization_ratio = sum([result.x[i] * total_budget * weights[i] for i in range(len(budget_params))]) / total_budget
+    st.write(f"Budget Utilization Ratio: {budget_utilization_ratio:.2f}")
+    
+    # Create a button to download the optimized budget allocation as a CSV file
+    @st.cache
+    def create_csv(result):
+        data = {'Parameter': budget_params, 'Allocation':[result.x[i] * total_budget * weights[i] for i in range(len(budget_params))]}
+        df = pd.DataFrame(data)
+        return df
+
+    if st.button("Download Optimized Budget Allocation"):
+        csv = create_csv(result)
+        st.download_button(label="Download CSV", data=csv.to_csv(index=False), file_name="optimized_budget_allocation.csv")
 else:
     st.write("Please enter the required data and click Submit.")
