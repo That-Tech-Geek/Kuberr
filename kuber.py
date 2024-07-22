@@ -14,14 +14,16 @@ employee_count = st.number_input("Enter the number of employees:")
 office_space = st.selectbox("Does the company have office space?", ["Yes", "No"])
 marketing_expenses = st.number_input("Enter the marketing expenses:")
 research_and_development_expenses = st.number_input("Enter the research and development expenses:")
-operating_expenses = st.number_input("Enter the operating expenses:")
-depreciation_expenses = st.number_input("Enter the depreciation expenses:")
+operating_expenses_base = st.number_input("Enter the operating expenses (excluding taxes and interest):")
 interest_expenses = st.number_input("Enter the interest expenses:")
 taxes = st.number_input("Enter the taxes:")
 
 office_rent = 0
 if office_space == "Yes":
     office_rent = st.number_input("Enter the office rent:")
+
+# Calculate the total operating expenses
+operating_expenses = operating_expenses_base + interest_expenses + taxes
 
 # Define the budget allocation parameters
 budget_params = ['Employee Salaries', 'Office Rent', 'Marketing', 'Research and Development', 'Operating Expenses', 'Miscellaneous']
@@ -37,7 +39,7 @@ weights = {
 # Create a button to submit the input data
 if st.button("Submit"):
     # Calculate the total budget available for optimization
-    total_budget = revenue - expenses - interest_expenses - taxes - office_rent
+    total_budget = revenue - expenses - office_rent
     
     # Define the objective function to minimize
     def objective_function(allocation):
