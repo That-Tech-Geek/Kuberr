@@ -24,23 +24,23 @@ if office_space == "Yes":
     office_rent = st.number_input("Enter the office rent:")
 
 # Define the budget allocation parameters
-budget_params = ['Employee Salaries', 'Office Rent', 'Marketing', 'Research and Development', 'Operating Expenses', 'Depreciation', 'Interest', 'Taxes', 'Miscellaneous']
+budget_params = ['Employee Salaries', 'Office Rent', 'Marketing', 'Research and Development', 'Operating Expenses', 'Miscellaneous']
 
 # Define the weights for each parameter based on industry and other factors
 weights = {
-    'Tech': [0.3, 0.2, 0.1, 0.2, 0.1, 0.05, 0.05, 0.05, 0.05],
-    'Finance': [0.2, 0.3, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05],
-    'Healthcare': [0.4, 0.2, 0.1, 0.1, 0.1, 0.05, 0.05, 0.05, 0.05],
-    'Other': [0.3, 0.2, 0.1, 0.2, 0.1, 0.05, 0.05, 0.05, 0.05]
+    'Tech': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2],
+    'Finance': [0.2, 0.3, 0.1, 0.1, 0.1, 0.2],
+    'Healthcare': [0.4, 0.2, 0.1, 0.1, 0.1, 0.1],
+    'Other': [0.3, 0.2, 0.1, 0.2, 0.1, 0.2]
 }[industry]
 
 # Create a button to submit the input data
 if st.button("Submit"):
+    # Calculate the total budget available for optimization
+    total_budget = revenue - expenses - interest_expenses - taxes - office_rent
+    
     # Define the objective function to minimize
     def objective_function(allocation):
-        # Calculate the total budget
-        total_budget = revenue - expenses - office_rent
-        
         # Calculate the allocation for each parameter
         allocations = [allocation[i] * total_budget * weights[i] for i in range(len(budget_params))]
         
@@ -65,6 +65,6 @@ if st.button("Submit"):
         if param == 'Office Rent' and office_space == "No":
             st.write(f"{param}: 0.00")
         else:
-            st.write(f"{param}: {result.x[i] * (revenue - expenses - office_rent) * weights[i]:.2f}")
+            st.write(f"{param}: {result.x[i] * total_budget * weights[i]:.2f}")
 else:
     st.write("Please enter the required data and click Submit.")
