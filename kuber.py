@@ -25,8 +25,9 @@ if uploaded_file is not None:
         # Create a dataframe with the input data
         input_data = pd.DataFrame({'Revenue': [revenue], 'Expenses': [expenses], 'Industry': [industry]})
 
-        # Load the trained machine learning model
-        model = joblib.load('budget_model.pkl')
+        # Train a machine learning model on the uploaded data
+        model = RandomForestRegressor()
+        model.fit(data[['Revenue', 'Expenses']], data['Budget'])
 
         # Make a prediction on the input data
         prediction = model.predict(input_data[['Revenue', 'Expenses']])
